@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ContentForm from './components/ContentForm';
 import PublishForm from './components/PublishForm';
+import LoadingSpinner from './components/LoadingSpinner'; // Importar el nuevo componente
 
 interface WebhookResponse {
   generatedContent: string;
@@ -105,12 +106,47 @@ function App() {
     }
   };
 
-  const handleImageUpload = (file: File) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setCustomImage(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+  const handleImageChange = async (file: File) => {
+    setIsLoading(true);
+    setError(null);
+
+    // Verifica si hay contenido generado antes de hacer la solicitud
+    if (!generatedContent || !generatedContent.content) {
+      setError("No hay contenido generado para enviar.");
+      setIsLoading(false);
+      return;
+    }
+
+    let formData = new FormData();
+    formData.append('image', file);
+    formData.append('name-file', file.name);
+
+    // Envía el contenido generado en lugar del texto fijo
+    formData.append('contenido', generatedContent.content);
+
+    try {
+      const response = await fetch('https://hook.eu2.make.com/7vsk8585ljuj1wud1xpibx3g6gbshtgd', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.text();
+      console.log('Image Change response:', result);
+      setCustomImage(URL.createObjectURL(file)); // Muestra la nueva imagen subida
+    } catch (err) {
+      console.error('Image change error:', err);
+      if (err instanceof Error) {
+        setError(`Error al cambiar la imagen: ${err.message}`);
+      } else {
+        setError('Ocurrió un error desconocido al cambiar la imagen.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleRemoveImage = () => {
@@ -122,7 +158,11 @@ function App() {
       <div className="bg-white shadow-md rounded-lg p-6 w-full max-w-2xl">
         <h1 className="text-2xl font-bold mb-6 text-center">Generador de Contenido AI para Redes Sociales</h1>
         <ContentForm onSubmit={handleSubmit} />
-        {isLoading && <p className="mt-4 text-center">Cargando...</p>}
+        {isLoading && (
+          <div className="mt-4 text-center">
+            <LoadingSpinner /> {/* Mostrar el loading spinner cuando esté cargando */}
+          </div>
+        )}
         {error && (
           <div className="mt-6">
             <h2 className="text-xl font-bold mb-2 text-red-600">Error:</h2>
@@ -137,16 +177,16 @@ function App() {
             <div className="bg-gray-100 p-4 rounded-md mb-4">
               <p>{generatedContent.content}</p>
             </div>
-            <img 
-              src={customImage || generatedContent.image} 
-              alt="Generated or Uploaded Image" 
-              className="w-full mb-4" 
+            <img
+              src={customImage || generatedContent.image}
+              alt="Generated or Uploaded Image"
+              className="w-full mb-4"
             />
-            <PublishForm 
-              initialContent={generatedContent.content} 
+            <PublishForm
+              initialContent={generatedContent.content}
               initialImage={customImage || generatedContent.image}
               onPublish={handlePublish}
-              onImageUpload={handleImageUpload}
+              onImageUpload={handleImageChange}
               onRemoveImage={handleRemoveImage}
             />
           </div>
