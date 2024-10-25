@@ -37,7 +37,7 @@ const ContentForm: React.FC<ContentFormProps> = ({ onSubmit }) => {
     prompt: '',
     contentType: 'Post',
     platforms: [],
-    aiLevel: 50,
+    aiLevel: 0.5,
     generateHashtags: false,
     referenceFile: null,
   });
@@ -61,7 +61,7 @@ const ContentForm: React.FC<ContentFormProps> = ({ onSubmit }) => {
   };
 
   const handleAILevelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, aiLevel: parseInt(e.target.value) }));
+    setFormData(prev => ({ ...prev, aiLevel: parseFloat(e.target.value) }));
   };
 
   const handleHashtagToggle = () => {
@@ -152,12 +152,13 @@ const ContentForm: React.FC<ContentFormProps> = ({ onSubmit }) => {
             <input
               type="range"
               min="0"
-              max="100"
+              max="1"
+              step="0.1"
               value={formData.aiLevel}
               onChange={handleAILevelChange}
               className="w-full appearance-none h-2 bg-gray-200 rounded-full"
               style={{
-                background: `linear-gradient(to right, black 0%, black ${formData.aiLevel}%, #e5e7eb ${formData.aiLevel}%, #e5e7eb 100%)`
+                background: `linear-gradient(to right, black 0%, black ${formData.aiLevel * 100}%, #e5e7eb ${formData.aiLevel * 100}%, #e5e7eb 100%)`
               }}
             />
             <div className="flex justify-between text-xs text-gray-500">

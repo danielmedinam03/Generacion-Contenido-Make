@@ -3,23 +3,34 @@ import ContentForm from './components/ContentForm';
 import PublishForm from './components/PublishForm';
 
 interface WebhookResponse {
+  generatedContent: string;
   image: string;
-  content: string;
 }
+
+const fetchWithRetry = async (url: string, options: RequestInit, retries = 3, delay = 1000) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fetch(url, options);
+    } catch (err) {
+      if (i === retries - 1) throw err;
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+};
 
 function App() {
   const [generatedContent, setGeneratedContent] = useState<WebhookResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [customImage, setCustomImage] = useState<string | null>(null);
 
   const handleSubmit = async (data: any) => {
-    console.log('Form data submitted:', data);
     setIsLoading(true);
     setError(null);
     setGeneratedContent(null);
 
     try {
-      const response = await fetchWithRetry('https://hook.us2.make.com/i7ufohn9sulsfhle5eskjjrdxv91s5o9', {
+      const response = await fetchWithRetry('https://hook.us2.make.com/ddlsk4bgarw0xeha9wpor0pylc77orhx', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -36,10 +47,14 @@ function App() {
 
       try {
         const parsedResult: WebhookResponse = JSON.parse(result);
-        setGeneratedContent(parsedResult);
+        setGeneratedContent({
+          content: parsedResult.generatedContent,
+          image: parsedResult.image
+        });
       } catch (parseError) {
         console.error('Error parsing JSON:', parseError);
-        setError('Error parsing server response');
+        console.error('Raw response:', result);
+        setError(`Error parsing server response: ${result.slice(0, 100)}...`);
       }
     } catch (err) {
       console.error('Fetch error:', err);
@@ -53,17 +68,23 @@ function App() {
     }
   };
 
-  const handlePublish = async (content: string, image: string) => {
+  const handlePublish = async (content: string, image: string | File) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch('https://hook.us2.make.com/ddlsk4bgarw0xeha9wpor0pylc77orhx', {
+      let formData = new FormData();
+      formData.append('content', content);
+
+      if (typeof image === 'string') {
+        formData.append('image', image);
+      } else {
+        formData.append('image', image, image.name);
+      }
+
+      const response = await fetch('https://hook.us2.make.com/6snp8m9ht2ordlmr85i8atlm3pdp6wkx', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content, image }),
+        body: formData,
       });
 
       if (!response.ok) {
@@ -82,6 +103,18 @@ function App() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleImageUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setCustomImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = () => {
+    setCustomImage(null);
   };
 
   return (
@@ -104,10 +137,17 @@ function App() {
             <div className="bg-gray-100 p-4 rounded-md mb-4">
               <p>{generatedContent.content}</p>
             </div>
+            <img 
+              src={customImage || generatedContent.image} 
+              alt="Generated or Uploaded Image" 
+              className="w-full mb-4" 
+            />
             <PublishForm 
               initialContent={generatedContent.content} 
-              initialImage={generatedContent.image}
-              onPublish={handlePublish} 
+              initialImage={customImage || generatedContent.image}
+              onPublish={handlePublish}
+              onImageUpload={handleImageUpload}
+              onRemoveImage={handleRemoveImage}
             />
           </div>
         )}

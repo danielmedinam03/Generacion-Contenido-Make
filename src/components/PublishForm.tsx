@@ -1,71 +1,89 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Send, X } from 'lucide-react';
 
 interface PublishFormProps {
   initialContent: string;
   initialImage: string;
-  onPublish: (content: string, image: string) => Promise<void>;
+  onPublish: (content: string, image: string | File) => void;
+  onImageUpload: (file: File) => void;
+  onRemoveImage: () => void;
 }
 
-const PublishForm: React.FC<PublishFormProps> = ({ initialContent, initialImage, onPublish }) => {
+const PublishForm: React.FC<PublishFormProps> = ({ 
+  initialContent, 
+  initialImage, 
+  onPublish, 
+  onImageUpload, 
+  onRemoveImage 
+}) => {
   const [content, setContent] = useState(initialContent);
-  const [image, setImage] = useState(initialImage);
-  const [isLoading, setIsLoading] = useState(false);
+  const [image, setImage] = useState<string | File>(initialImage);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    setImage(initialImage);
+  }, [initialImage]);
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    try {
-      await onPublish(content, image);
-      alert('Contenido publicado con éxito!');
-    } catch (error) {
-      console.error('Error al publicar:', error);
-      alert('Error al publicar el contenido. Por favor, intenta de nuevo.');
-    } finally {
-      setIsLoading(false);
+    onPublish(content, image);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImage(file);
+      onImageUpload(file);
     }
+  };
+
+  const handleRemoveImage = () => {
+    setImage(initialImage);
+    onRemoveImage();
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
-          Contenido generado
-        </label>
-        <textarea
-          id="content"
-          name="content"
-          rows={4}
-          className="w-full p-2 border border-gray-300 rounded-md"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="Edita el contenido generado aquí..."
+      <textarea
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        className="w-full p-2 border border-gray-300 rounded-md"
+        rows={6}
+      />
+      <div className="flex items-center space-x-4">
+        <img 
+          src={typeof image === 'string' ? image : URL.createObjectURL(image)} 
+          alt="Preview" 
+          className="w-24 h-24 object-cover" 
         />
+        <div>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            className="hidden"
+            id="image-upload"
+          />
+          <label
+            htmlFor="image-upload"
+            className="cursor-pointer bg-blue-500 text-white px-4 py-2 rounded-md"
+          >
+            Cambiar imagen
+          </label>
+        </div>
+        <button
+          type="button"
+          onClick={handleRemoveImage}
+          className="bg-red-500 text-white p-2 rounded-md"
+        >
+          <X size={20} />
+        </button>
       </div>
-      
-      <div>
-        <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">
-          Imagen
-        </label>
-        {image && (
-          <img src={image} alt="Preview" className="mb-2 max-w-full h-auto" />
-        )}
-        <input
-          type="text"
-          id="image"
-          name="image"
-          value={image}
-          onChange={(e) => setImage(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded-md"
-          placeholder="URL de la imagen"
-        />
-      </div>
-      
       <button
         type="submit"
-        className="w-full py-2 px-4 bg-black text-white rounded-md hover:bg-gray-800 transition duration-200"
-        disabled={isLoading}
+        className="w-full flex justify-center items-center py-2 px-4 bg-black text-white rounded-md"
       >
-        {isLoading ? 'Publicando...' : 'Publicar'}
+        <Send className="w-5 h-5 mr-2" />
+        Publicar Contenido
       </button>
     </form>
   );
