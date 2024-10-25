@@ -8,6 +8,7 @@ interface WebhookResponse {
   image: string;
 }
 
+// Función para intentar realizar la solicitud con reintentos
 const fetchWithRetry = async (url: string, options: RequestInit, retries = 3, delay = 1000) => {
   for (let i = 0; i < retries; i++) {
     try {
@@ -23,15 +24,22 @@ function App() {
   const [generatedContent, setGeneratedContent] = useState<WebhookResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [customImage, setCustomImage] = useState<string | null>(null);
+  const [customImage, setCustomImage] = useState<File | null>(null); // Imagen personalizada subida
 
+  // Función para restablecer el estado y limpiar la caché
+  const resetState = () => {
+    setGeneratedContent(null);  // Limpiar contenido generado
+    setCustomImage(null);       // Limpiar imagen personalizada
+    setError(null);             // Limpiar cualquier mensaje de error
+  };
+
+  // Función para manejar la generación de contenido
   const handleSubmit = async (data: any) => {
     setIsLoading(true);
-    setError(null);
-    setGeneratedContent(null);
+    resetState();  // Limpiar todo al generar nuevo contenido
 
     try {
-      const response = await fetchWithRetry('https://hook.us2.make.com/ddlsk4bgarw0xeha9wpor0pylc77orhx', {
+      const response = await fetchWithRetry('https://hook.eu2.make.com/adb51s8yo1ir4e5y1bnue37uyg3duyoo', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -69,21 +77,32 @@ function App() {
     }
   };
 
-  const handlePublish = async (content: string, image: string | File) => {
+  // Publicación de contenido generado automatizado
+  const handlePublish = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
       let formData = new FormData();
-      formData.append('content', content);
 
-      if (typeof image === 'string') {
-        formData.append('image', image);
-      } else {
-        formData.append('image', image, image.name);
+      // Verificar si hay contenido generado antes de hacer la solicitud
+      if (!generatedContent || !generatedContent.content) {
+        setError("No hay contenido generado para publicar.");
+        setIsLoading(false);
+        return;
       }
 
-      const response = await fetch('https://hook.us2.make.com/6snp8m9ht2ordlmr85i8atlm3pdp6wkx', {
+      // Agregar el contenido generado automáticamente
+      formData.append('contenido', generatedContent.content);
+
+      // Agregar la URL de la imagen generada o la imagen personalizada seleccionada
+      if (customImage) {
+        formData.append('image', customImage, customImage.name); // Si hay una imagen personalizada, envíala
+      } else {
+        formData.append('url-image', generatedContent.image); // Si no hay imagen personalizada, usa la generada automáticamente
+      }
+
+      const response = await fetch('https://hook.eu2.make.com/7vsk8585ljuj1wud1xpibx3g6gbshtgd', {
         method: 'POST',
         body: formData,
       });
@@ -106,51 +125,14 @@ function App() {
     }
   };
 
-  const handleImageChange = async (file: File) => {
-    setIsLoading(true);
-    setError(null);
-
-    // Verifica si hay contenido generado antes de hacer la solicitud
-    if (!generatedContent || !generatedContent.content) {
-      setError("No hay contenido generado para enviar.");
-      setIsLoading(false);
-      return;
-    }
-
-    let formData = new FormData();
-    formData.append('image', file);
-    formData.append('name-file', file.name);
-
-    // Envía el contenido generado en lugar del texto fijo
-    formData.append('contenido', generatedContent.content);
-
-    try {
-      const response = await fetch('https://hook.eu2.make.com/7vsk8585ljuj1wud1xpibx3g6gbshtgd', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.text();
-      console.log('Image Change response:', result);
-      setCustomImage(URL.createObjectURL(file)); // Muestra la nueva imagen subida
-    } catch (err) {
-      console.error('Image change error:', err);
-      if (err instanceof Error) {
-        setError(`Error al cambiar la imagen: ${err.message}`);
-      } else {
-        setError('Ocurrió un error desconocido al cambiar la imagen.');
-      }
-    } finally {
-      setIsLoading(false);
-    }
+  // Función para manejar la subida de imagen personalizada sin enviar automáticamente la publicación
+  const handleImageChange = (file: File) => {
+    setCustomImage(file); // Guardar la imagen personalizada en el estado para usarla luego en la publicación
   };
 
+  // Función para limpiar la imagen personalizada
   const handleRemoveImage = () => {
-    setCustomImage(null);
+    setCustomImage(null); // Limpiar la imagen personalizada
   };
 
   return (
@@ -178,15 +160,15 @@ function App() {
               <p>{generatedContent.content}</p>
             </div>
             <img
-              src={customImage || generatedContent.image}
+              src={customImage ? URL.createObjectURL(customImage) : generatedContent.image}
               alt="Generated or Uploaded Image"
               className="w-full mb-4"
             />
             <PublishForm
               initialContent={generatedContent.content}
-              initialImage={customImage || generatedContent.image}
-              onPublish={handlePublish}
-              onImageUpload={handleImageChange}
+              initialImage={customImage ? URL.createObjectURL(customImage) : generatedContent.image}
+              onPublish={handlePublish}  // Publicación cuando se presiona el botón
+              onImageUpload={handleImageChange}  // Guardar la imagen sin enviar automáticamente
               onRemoveImage={handleRemoveImage}
             />
           </div>
