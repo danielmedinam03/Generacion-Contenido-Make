@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import ContentForm from './components/ContentForm';
 import PublishForm from './components/PublishForm';
 import LoadingSpinner from './components/LoadingSpinner'; // Importar el nuevo componente
+import ReactMarkdown from 'react-markdown'; // Agregar este import al inicio
 
 interface WebhookResponse {
-  generatedContent: string;
+  generatedContent: string;  // Cambiar de 'content' a 'generatedContent'
   image: string;
+  RSValue: string;
 }
 
 // Función para intentar realizar la solicitud con reintentos
@@ -19,6 +21,17 @@ const fetchWithRetry = async (url: string, options: RequestInit, retries = 3, de
     }
   }
 };
+
+interface FormData {
+  urls: string;
+  prompt: string;
+  contentType: string;
+  aiLevel: number;
+  generateHashtags: boolean;
+  referenceFile: File | null;
+  RS: string;
+  RSValue: string;
+}
 
 function App() {
   const [generatedContent, setGeneratedContent] = useState<WebhookResponse | null>(null);
@@ -34,17 +47,25 @@ function App() {
   };
 
   // Función para manejar la generación de contenido
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: FormData) => {
     setIsLoading(true);
     resetState();  // Limpiar todo al generar nuevo contenido
 
+    console.log('Submitting data to generate content:', data); // Verifica recepción de datos en App
+
     try {
+      // Aquí imprimimos el valor que recibimos del formulario
+      console.log('RSValue recibido del formulario:', data.RSValue);
+
       const response = await fetchWithRetry('https://hook.eu2.make.com/adb51s8yo1ir4e5y1bnue37uyg3duyoo', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          RS: data.RSValue, // Usamos directamente RSValue como RS
+        }),
       });
 
       if (!response.ok) {
@@ -57,8 +78,9 @@ function App() {
       try {
         const parsedResult: WebhookResponse = JSON.parse(result);
         setGeneratedContent({
-          content: parsedResult.generatedContent,
-          image: parsedResult.image
+          content: parsedResult.generatedContent, // Usar generatedContent en lugar de content
+          image: parsedResult.image,
+          RSValue: data.RSValue
         });
       } catch (parseError) {
         console.error('Error parsing JSON:', parseError);
@@ -101,6 +123,10 @@ function App() {
       } else {
         formData.append('url-image', generatedContent.image); // Si no hay imagen personalizada, usa la generada automáticamente
       }
+
+      // Agregar el nuevo parámetro "RS" al formData
+      formData.append('RS', generatedContent.RSValue || '1'); // Usar el valor numérico de la red social
+      console.log('Publishing data with RS:', generatedContent.RSValue); // Verifica valor de RS al publicar
 
       const response = await fetch('https://hook.eu2.make.com/7vsk8585ljuj1wud1xpibx3g6gbshtgd', {
         method: 'POST',
@@ -156,8 +182,8 @@ function App() {
         {generatedContent && (
           <div className="mt-6">
             <h2 className="text-xl font-bold mb-2">Contenido Generado:</h2>
-            <div className="bg-gray-100 p-4 rounded-md mb-4">
-              <p>{generatedContent.content}</p>
+            <div className="bg-gray-100 p-4 rounded-md mb-4 whitespace-pre-wrap">
+              <ReactMarkdown>{generatedContent.content}</ReactMarkdown>
             </div>
             <img
               src={customImage ? URL.createObjectURL(customImage) : generatedContent.image}

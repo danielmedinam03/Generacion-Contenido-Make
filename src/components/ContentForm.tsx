@@ -5,14 +5,13 @@ interface FormData {
   urls: string;
   prompt: string;
   contentType: string;
-  platforms: string[];
   aiLevel: number;
   generateHashtags: boolean;
   referenceFile: File | null;
 }
 
 interface ContentFormProps {
-  onSubmit: (data: FormData) => void;
+  onSubmit: (data: FormData & { RS: string, RSValue: string }) => void; // Asegura que onSubmit reciba también "RS" y "RSValue"
 }
 
 const contentTypes = [
@@ -24,11 +23,11 @@ const contentTypes = [
 ];
 
 const socialPlatforms = [
-  { name: 'Facebook', icon: Facebook },
-  { name: 'Instagram', icon: Instagram },
-  { name: 'Twitter', icon: Twitter },
-  { name: 'LinkedIn', icon: Linkedin },
-  { name: 'TikTok', icon: Music },
+  { name: 'LinkedIn', icon: Linkedin, value: '1' },
+  { name: 'Facebook', icon: Facebook, value: '2' },
+  { name: 'Instagram', icon: Instagram, value: '3' },
+  { name: 'Twitter', icon: Twitter, value: '4' },
+  { name: 'TikTok', icon: Music, value: '5' },
 ];
 
 const ContentForm: React.FC<ContentFormProps> = ({ onSubmit }) => {
@@ -36,11 +35,11 @@ const ContentForm: React.FC<ContentFormProps> = ({ onSubmit }) => {
     urls: '',
     prompt: '',
     contentType: 'Post',
-    platforms: [],
     aiLevel: 0.5,
     generateHashtags: false,
     referenceFile: null,
   });
+  const [selectedPlatform, setSelectedPlatform] = useState<{ name: string, value: string } | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -51,14 +50,11 @@ const ContentForm: React.FC<ContentFormProps> = ({ onSubmit }) => {
     setFormData(prev => ({ ...prev, contentType: type }));
   };
 
-  const handlePlatformToggle = (platform: string) => {
-    setFormData(prev => ({
-      ...prev,
-      platforms: prev.platforms.includes(platform)
-        ? prev.platforms.filter(p => p !== platform)
-        : [...prev.platforms, platform],
-    }));
+  const handlePlatformSelect = (platform: string, value: string) => {
+    console.log('Platform selected:', platform, 'Value:', value); // Verifica selección de plataforma
+    setSelectedPlatform({ name: platform, value: value });
   };
+
 
   const handleAILevelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({ ...prev, aiLevel: parseFloat(e.target.value) }));
@@ -75,8 +71,14 @@ const ContentForm: React.FC<ContentFormProps> = ({ onSubmit }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    console.log('Submitting form with platform:', selectedPlatform); // Verifica envío de datos
+    onSubmit({
+      ...formData,
+      RS: selectedPlatform?.name || '',
+      RSValue: selectedPlatform?.value || ''
+    });
   };
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -113,9 +115,8 @@ const ContentForm: React.FC<ContentFormProps> = ({ onSubmit }) => {
             <button
               key={name}
               type="button"
-              className={`flex flex-col items-center p-2 rounded-md ${
-                formData.contentType === name ? 'bg-black text-white' : 'bg-gray-200 text-gray-700'
-              }`}
+              className={`flex flex-col items-center p-2 rounded-md ${formData.contentType === name ? 'bg-black text-white' : 'bg-gray-200 text-gray-700'
+                }`}
               onClick={() => handleContentTypeChange(name)}
             >
               <Icon className="w-6 h-6 mb-1" />
@@ -126,59 +127,53 @@ const ContentForm: React.FC<ContentFormProps> = ({ onSubmit }) => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Parámetros de Contenido</label>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">Plataformas</label>
-            <div className="flex space-x-2">
-              {socialPlatforms.map(({ name, icon: Icon }) => (
-                <button
-                  key={name}
-                  type="button"
-                  className={`flex items-center p-2 rounded-md ${
-                    formData.platforms.includes(name) ? 'bg-black text-white' : 'bg-gray-200 text-gray-700'
-                  }`}
-                  onClick={() => handlePlatformToggle(name)}
-                >
-                  <Icon className="w-5 h-5 mr-1" />
-                  <span className="text-xs">{name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">Nivel de Creatividad AI</label>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              value={formData.aiLevel}
-              onChange={handleAILevelChange}
-              className="w-full appearance-none h-2 bg-gray-200 rounded-full"
-              style={{
-                background: `linear-gradient(to right, black 0%, black ${formData.aiLevel * 100}%, #e5e7eb ${formData.aiLevel * 100}%, #e5e7eb 100%)`
-              }}
-            />
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>Conservador</span>
-              <span>Balanceado</span>
-              <span>Creativo</span>
-            </div>
-          </div>
-
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="generateHashtags"
-              checked={formData.generateHashtags}
-              onChange={handleHashtagToggle}
-              className="mr-2 appearance-none w-4 h-4 border border-gray-300 rounded-sm bg-white checked:bg-black checked:border-black focus:outline-none transition duration-200"
-            />
-            <label htmlFor="generateHashtags" className="text-sm text-gray-700">Generar hashtags relevantes</label>
-          </div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Plataformas</label>
+        <div className="flex space-x-2">
+          {socialPlatforms.map(({ name, icon: Icon, value }) => (
+            <button
+              key={name}
+              type="button"
+              className={`flex items-center p-2 rounded-md ${selectedPlatform?.name === name ? 'bg-black text-white' : 'bg-gray-200 text-gray-700'
+                }`}
+              onClick={() => handlePlatformSelect(name, value)}
+            >
+              <Icon className="w-5 h-5 mr-1" />
+              <span className="text-xs">{name}</span>
+            </button>
+          ))}
         </div>
+      </div>
+
+      <div>
+        <label className="block text-sm text-gray-700 mb-1">Nivel de Creatividad AI</label>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.1"
+          value={formData.aiLevel}
+          onChange={handleAILevelChange}
+          className="w-full appearance-none h-2 bg-gray-200 rounded-full"
+          style={{
+            background: `linear-gradient(to right, black 0%, black ${formData.aiLevel * 100}%, #e5e7eb ${formData.aiLevel * 100}%, #e5e7eb 100%)`
+          }}
+        />
+        <div className="flex justify-between text-xs text-gray-500">
+          <span>Conservador</span>
+          <span>Balanceado</span>
+          <span>Creativo</span>
+        </div>
+      </div>
+
+      <div className="flex items-center">
+        <input
+          type="checkbox"
+          id="generateHashtags"
+          checked={formData.generateHashtags}
+          onChange={handleHashtagToggle}
+          className="mr-2 appearance-none w-4 h-4 border border-gray-300 rounded-sm bg-white checked:bg-black checked:border-black focus:outline-none transition duration-200"
+        />
+        <label htmlFor="generateHashtags" className="text-sm text-gray-700">Generar hashtags relevantes</label>
       </div>
 
       <div>

@@ -11,11 +11,13 @@
     "scrape": "python3 scraper.py"
   },
   "dependencies": {
+    "ffmpeg.js": "^4.2.9003",
     "lucide-react": "^0.344.0",
+    "markdown": "^0.5.0",
+    "openai": "^4.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "openai": "^4.0.0",
-    "ffmpeg.js": "^4.2.9003"
+    "react-markdown": "^9.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
