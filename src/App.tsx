@@ -8,6 +8,13 @@ interface WebhookResponse {
   image: string;
 }
 
+// Añadir nueva interfaz para el tipo de datos
+interface ContentFormData {
+  type: string;
+  prompt: string;
+  aspectRatio?: string; // Nuevo campo opcional
+}
+
 // Función para intentar realizar la solicitud con reintentos
 const fetchWithRetry = async (url: string, options: RequestInit, retries = 3, delay = 1000) => {
   for (let i = 0; i < retries; i++) {
@@ -34,7 +41,7 @@ function App() {
   };
 
   // Función para manejar la generación de contenido
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: ContentFormData) => {
     setIsLoading(true);
     resetState();  // Limpiar todo al generar nuevo contenido
 
@@ -44,7 +51,10 @@ function App() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          aspectRatio: data.aspectRatio || '1:1', // Valor por defecto si no se especifica
+        }),
       });
 
       if (!response.ok) {
