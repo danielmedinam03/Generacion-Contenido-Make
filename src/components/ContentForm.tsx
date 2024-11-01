@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { Send, FileText, Image, Video, Mic, FileEdit, Facebook, Instagram, Twitter, Linkedin, Music } from 'lucide-react';
+import { Send, FileText, Image, Video, Mic, FileEdit, Facebook, Instagram, Twitter, Linkedin, Music, Plus, X } from 'lucide-react';
 import { Fragment } from 'react';
 import { Listbox, Transition } from '@headlessui/react';
 import { ChevronUpDownIcon, CheckIcon } from '@heroicons/react/20/solid';
@@ -115,11 +115,8 @@ const ContentForm: React.FC<ContentFormProps> = ({ onSubmit }) => {
     platforms: [],
     aiLevel: 0.5,
     generateHashtags: false,
-<<<<<<< HEAD
-=======
     referenceFile: null,
     aspectRatio: '1:1',
->>>>>>> origin/main
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -178,8 +175,6 @@ const ContentForm: React.FC<ContentFormProps> = ({ onSubmit }) => {
     setFormData(prev => ({ ...prev, generateHashtags: !prev.generateHashtags }));
   };
 
-<<<<<<< HEAD
-=======
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files ? e.target.files[0] : null;
     setFormData(prev => ({ ...prev, referenceFile: file }));
@@ -189,7 +184,6 @@ const ContentForm: React.FC<ContentFormProps> = ({ onSubmit }) => {
     setFormData(prev => ({ ...prev, aspectRatio: ratio }));
   };
 
->>>>>>> origin/main
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
@@ -379,15 +373,6 @@ const ContentForm: React.FC<ContentFormProps> = ({ onSubmit }) => {
         </div>
       </div>
 
-<<<<<<< HEAD
-  <button
-    type="submit"
-    className="w-full flex justify-center items-center py-2 px-4 bg-black text-white rounded-md"
-  >
-    <Send className="w-5 h-5 mr-2" />
-    Generar Contenido
-  </button>
-=======
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Referencia Adicional (Opcional)</label>
         <input
@@ -397,19 +382,14 @@ const ContentForm: React.FC<ContentFormProps> = ({ onSubmit }) => {
         />
       </div>
 
-      
-
-      <div>
-        <button
-          type="submit"
-          className="w-full flex justify-center items-center py-2 px-4 bg-black text-white rounded-md"
-        >
-          <Send className="w-5 h-5 mr-2" />
-          Generar Contenido
-        </button>
-      </div>
->>>>>>> origin/main
-    </form >
+      <button
+        type="submit"
+        className="w-full flex justify-center items-center py-2 px-4 bg-black text-white rounded-md"
+      >
+        <Send className="w-5 h-5 mr-2" />
+        Generar Contenido
+      </button>
+    </form>
   );
 };
 
