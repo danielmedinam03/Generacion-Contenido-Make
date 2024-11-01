@@ -10,6 +10,13 @@ interface WebhookResponse {
   RSValue: string;
 }
 
+// Añadir nueva interfaz para el tipo de datos
+interface ContentFormData {
+  type: string;
+  prompt: string;
+  aspectRatio?: string; // Nuevo campo opcional
+}
+
 // Función para intentar realizar la solicitud con reintentos
 const fetchWithRetry = async (url: string, options: RequestInit, retries = 3, delay = 1000) => {
   for (let i = 0; i < retries; i++) {
@@ -47,7 +54,7 @@ function App() {
   };
 
   // Función para manejar la generación de contenido
-  const handleSubmit = async (data: FormData) => {
+  const handleSubmit = async (data: ContentFormData) => {
     setIsLoading(true);
     resetState();  // Limpiar todo al generar nuevo contenido
 
@@ -64,7 +71,7 @@ function App() {
         },
         body: JSON.stringify({
           ...data,
-          RS: data.RSValue, // Usamos directamente RSValue como RS
+          aspectRatio: data.aspectRatio || '1:1', // Usar el aspect ratio
         }),
       });
 
