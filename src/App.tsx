@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
 import ContentForm from './components/ContentForm';
 import PublishForm from './components/PublishForm';
-import LoadingSpinner from './components/LoadingSpinner'; // Importar el nuevo componente
+import LoadingSpinner from './components/LoadingSpinner';
 
 interface WebhookResponse {
   generatedContent: string;
   image: string;
+  content: string;
 }
 
 // Añadir nueva interfaz para el tipo de datos
 interface ContentFormData {
   type: string;
   prompt: string;
-  aspectRatio?: string; // Nuevo campo opcional
+  aspectRatio?: string;
+  platforms: string[];
 }
 
 // Función para intentar realizar la solicitud con reintentos
@@ -31,19 +33,21 @@ function App() {
   const [generatedContent, setGeneratedContent] = useState<WebhookResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [customImage, setCustomImage] = useState<File | null>(null); // Imagen personalizada subida
+  const [customImage, setCustomImage] = useState<File | null>(null);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
 
   // Función para restablecer el estado y limpiar la caché
   const resetState = () => {
-    setGeneratedContent(null);  // Limpiar contenido generado
-    setCustomImage(null);       // Limpiar imagen personalizada
-    setError(null);             // Limpiar cualquier mensaje de error
+    setGeneratedContent(null);
+    setCustomImage(null);
+    setError(null);
   };
 
   // Función para manejar la generación de contenido
   const handleSubmit = async (data: ContentFormData) => {
     setIsLoading(true);
-    resetState();  // Limpiar todo al generar nuevo contenido
+    resetState();
+    setSelectedPlatforms(data.platforms);
 
     try {
       const response = await fetchWithRetry('https://hook.eu2.make.com/adb51s8yo1ir4e5y1bnue37uyg3duyoo', {
@@ -53,7 +57,7 @@ function App() {
         },
         body: JSON.stringify({
           ...data,
-          aspectRatio: data.aspectRatio || '1:1', // Valor por defecto si no se especifica
+          aspectRatio: data.aspectRatio || '1:1',
         }),
       });
 
@@ -67,8 +71,9 @@ function App() {
       try {
         const parsedResult: WebhookResponse = JSON.parse(result);
         setGeneratedContent({
-          content: parsedResult.generatedContent,
-          image: parsedResult.image
+          content: parsedResult.content || parsedResult.generatedContent,
+          image: parsedResult.image,
+          generatedContent: parsedResult.generatedContent
         });
       } catch (parseError) {
         console.error('Error parsing JSON:', parseError);
@@ -88,28 +93,27 @@ function App() {
   };
 
   // Publicación de contenido generado automatizado
-  const handlePublish = async () => {
+  const handlePublish = async (content: string, platforms: string[]) => {
     setIsLoading(true);
     setError(null);
 
     try {
       let formData = new FormData();
 
-      // Verificar si hay contenido generado antes de hacer la solicitud
       if (!generatedContent || !generatedContent.content) {
         setError("No hay contenido generado para publicar.");
         setIsLoading(false);
         return;
       }
 
-      // Agregar el contenido generado automáticamente
       formData.append('contenido', generatedContent.content);
+      formData.append('platforms', JSON.stringify(platforms));
 
       // Agregar la URL de la imagen generada o la imagen personalizada seleccionada
       if (customImage) {
-        formData.append('image', customImage, customImage.name); // Si hay una imagen personalizada, envíala
+        formData.append('image', customImage, customImage.name);
       } else {
-        formData.append('url-image', generatedContent.image); // Si no hay imagen personalizada, usa la generada automáticamente
+        formData.append('url-image', generatedContent.image);
       }
 
       const response = await fetch('https://hook.eu2.make.com/7vsk8585ljuj1wud1xpibx3g6gbshtgd', {
@@ -137,12 +141,12 @@ function App() {
 
   // Función para manejar la subida de imagen personalizada sin enviar automáticamente la publicación
   const handleImageChange = (file: File) => {
-    setCustomImage(file); // Guardar la imagen personalizada en el estado para usarla luego en la publicación
+    setCustomImage(file);
   };
 
   // Función para limpiar la imagen personalizada
   const handleRemoveImage = () => {
-    setCustomImage(null); // Limpiar la imagen personalizada
+    setCustomImage(null);
   };
 
   return (
@@ -152,7 +156,7 @@ function App() {
         <ContentForm onSubmit={handleSubmit} />
         {isLoading && (
           <div className="mt-4 text-center">
-            <LoadingSpinner /> {/* Mostrar el loading spinner cuando esté cargando */}
+            <LoadingSpinner />
           </div>
         )}
         {error && (
@@ -163,22 +167,25 @@ function App() {
             </div>
           </div>
         )}
-        {generatedContent && (
+        {generatedContent && generatedContent.content && (
           <div className="mt-6">
             <h2 className="text-xl font-bold mb-2">Contenido Generado:</h2>
             <div className="bg-gray-100 p-4 rounded-md mb-4">
               <p>{generatedContent.content}</p>
             </div>
-            <img
-              src={customImage ? URL.createObjectURL(customImage) : generatedContent.image}
-              alt="Generated or Uploaded Image"
-              className="w-full mb-4"
-            />
+            {generatedContent.image && (
+              <img
+                src={customImage ? URL.createObjectURL(customImage) : generatedContent.image}
+                alt="Generated or Uploaded Image"
+                className="w-full mb-4"
+              />
+            )}
             <PublishForm
               initialContent={generatedContent.content}
               initialImage={customImage ? URL.createObjectURL(customImage) : generatedContent.image}
-              onPublish={handlePublish}  // Publicación cuando se presiona el botón
-              onImageUpload={handleImageChange}  // Guardar la imagen sin enviar automáticamente
+              platforms={selectedPlatforms}
+              onPublish={handlePublish}
+              onImageUpload={handleImageChange}
               onRemoveImage={handleRemoveImage}
             />
           </div>

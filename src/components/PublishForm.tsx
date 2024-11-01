@@ -4,7 +4,8 @@ import { Send, X } from 'lucide-react';
 interface PublishFormProps {
   initialContent: string;
   initialImage: string;
-  onPublish: (content: string, image: string | File) => void;
+  platforms: string[];
+  onPublish: (content: string, platforms: string[]) => void;
   onImageUpload: (file: File) => void;
   onRemoveImage: () => void;
 }
@@ -12,6 +13,7 @@ interface PublishFormProps {
 const PublishForm: React.FC<PublishFormProps> = ({ 
   initialContent, 
   initialImage, 
+  platforms, 
   onPublish, 
   onImageUpload, 
   onRemoveImage 
@@ -25,7 +27,7 @@ const PublishForm: React.FC<PublishFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onPublish(content, image);
+    onPublish(content, platforms);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
