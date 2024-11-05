@@ -9,12 +9,12 @@ interface PublishFormProps {
   onRemoveImage: () => void;
 }
 
-const PublishForm: React.FC<PublishFormProps> = ({ 
-  initialContent, 
-  initialImage, 
-  onPublish, 
-  onImageUpload, 
-  onRemoveImage 
+const PublishForm: React.FC<PublishFormProps> = ({
+  initialContent,
+  initialImage,
+  onPublish,
+  onImageUpload,
+  onRemoveImage
 }) => {
   const [content, setContent] = useState(initialContent);
   const [image, setImage] = useState<string | File>(initialImage);
@@ -50,10 +50,10 @@ const PublishForm: React.FC<PublishFormProps> = ({
         rows={6}
       />
       <div className="flex items-center space-x-4">
-        <img 
-          src={typeof image === 'string' ? image : URL.createObjectURL(image)} 
-          alt="Preview" 
-          className="w-24 h-24 object-cover" 
+        <img
+          src={typeof image === 'string' ? image : URL.createObjectURL(image)}
+          alt="Preview"
+          className="w-24 h-24 object-cover"
         />
         <div>
           <input
