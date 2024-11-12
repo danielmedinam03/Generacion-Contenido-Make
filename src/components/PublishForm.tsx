@@ -3,34 +3,18 @@ import { Send, X } from 'lucide-react';
 
 interface PublishFormProps {
   initialContent: string;
-<<<<<<< HEAD
-  initialImage: string;
-  platforms: string[];
-  onPublish: (content: string, platforms: string[]) => void;
-=======
   initialImage: string | File | null; // Ajuste: la imagen puede ser un string, un archivo o null
   onPublish: (content: string, image: string | File | null) => void;
->>>>>>> LuisLopez
   onImageUpload: (file: File) => void;
   onRemoveImage: () => void;
 }
 
-<<<<<<< HEAD
-const PublishForm: React.FC<PublishFormProps> = ({ 
-  initialContent, 
-  initialImage, 
-  platforms, 
-  onPublish, 
-  onImageUpload, 
-  onRemoveImage 
-=======
 const PublishForm: React.FC<PublishFormProps> = ({
   initialContent,
   initialImage,
   onPublish,
   onImageUpload,
   onRemoveImage
->>>>>>> LuisLopez
 }) => {
   const [content, setContent] = useState(initialContent);
   const [image, setImage] = useState<string | File | null>(initialImage);
