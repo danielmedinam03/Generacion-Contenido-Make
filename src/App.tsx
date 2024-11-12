@@ -1,24 +1,22 @@
 import React, { useState } from 'react';
 import ContentForm from './components/ContentForm';
-import PublishForm from './components/PublishForm';
 import LoadingSpinner from './components/LoadingSpinner';
-import ReactMarkdown from 'react-markdown';
-import PodcastPlayer from './components/PodcastPlayer';
 import AudioPlayer from './components/AudioPlayer';
-import { Mic } from 'lucide-react';
+import PublishForm from './components/PublishForm'; // Añadido para manejar la publicación del contenido
 
 interface WebhookResponse {
   generatedContent: string;
   image?: string;
   RSValue: string;
-  type?: string; // Añadir tipo para identificar si es un Podcast
-  urlpodcast?: string; // Añadir urlpodcast para el caso del podcast
+  type?: string;
+  urlpodcast?: string;
 }
 
 interface ContentFormData {
   type: string;
   prompt: string;
   aspectRatio?: string;
+  platforms: string[];
 }
 
 const fetchWithRetry = async (url: string, options: RequestInit, retries = 3, delay = 1000) => {
@@ -32,17 +30,6 @@ const fetchWithRetry = async (url: string, options: RequestInit, retries = 3, de
   }
 };
 
-interface FormData {
-  urls: string;
-  prompt: string;
-  contentType: string;
-  aiLevel: number;
-  generateHashtags: boolean;
-  referenceFile: File | null;
-  RS: string;
-  RSValue: string;
-}
-
 function App() {
   const [generatedContent, setGeneratedContent] = useState<WebhookResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -51,8 +38,8 @@ function App() {
 
   const resetState = () => {
     setGeneratedContent(null);
-    setCustomImage(null);
     setError(null);
+    setCustomImage(null);
   };
 
   const handleSubmit = async (data: ContentFormData) => {
@@ -82,25 +69,27 @@ function App() {
 
       try {
         const parsedResult: WebhookResponse = JSON.parse(result);
+        console.log('Parsed result:', parsedResult);
+        console.log('Resultado URL Podcast:', parsedResult.urlpodcast);
+
+        let adjustedUrl = parsedResult.urlpodcast;
+        if (adjustedUrl && adjustedUrl.includes('www.dropbox.com')) {
+          adjustedUrl = adjustedUrl.replace('www.dropbox.com', 'dl.dropboxusercontent.com');
+          adjustedUrl = adjustedUrl.replace('?dl=1', ''); // Eliminar el parámetro de descarga
+        }
+
         setGeneratedContent({
-          generatedContent: parsedResult.generatedContent,
-          image: parsedResult.image,
-          RSValue: data.RSValue,
-          type: data.type,
-          urlpodcast: parsedResult.urlpodcast, // Agregar urlpodcast si existe
+          ...parsedResult,
+          urlpodcast: adjustedUrl,
         });
+
       } catch (parseError) {
         console.error('Error parsing JSON:', parseError);
-        console.error('Raw response:', result);
         setError(`Error parsing server response: ${result.slice(0, 100)}...`);
       }
     } catch (err) {
       console.error('Fetch error:', err);
-      if (err instanceof Error) {
-        setError(`An error occurred: ${err.message}`);
-      } else {
-        setError('An unknown error occurred.');
-      }
+      setError(err instanceof Error ? `An error occurred: ${err.message}` : 'An unknown error occurred.');
     } finally {
       setIsLoading(false);
     }
@@ -124,11 +113,11 @@ function App() {
       if (customImage) {
         formData.append('image', customImage, customImage.name);
       } else {
-        formData.append('url-image', generatedContent.image);
+        formData.append('url-image', generatedContent.image || '');
       }
 
       formData.append('RS', generatedContent.RSValue || '1');
-      console.log('Publishing data with RS:', generatedContent.RSValue);
+      console.log('RSValue being sent:', generatedContent.RSValue);
 
       const response = await fetch('https://hook.eu2.make.com/7vsk8585ljuj1wud1xpibx3g6gbshtgd', {
         method: 'POST',
@@ -180,36 +169,47 @@ function App() {
           </div>
         )}
         {generatedContent && (
-          <div className="mt-6">
-            <h2 className="text-xl font-bold mb-2">Contenido Generado:</h2>
-            <div className="bg-gray-100 p-4 rounded-md mb-4 whitespace-pre-wrap">
-              <ReactMarkdown>{generatedContent.generatedContent}</ReactMarkdown>
-            </div>
-            {generatedContent.type === 'Podcast' && generatedContent.urlpodcast && (
-              <div className="space-y-4">
-                <div className="bg-gray-100 p-4 rounded-md">
-                  <h3 className="text-lg font-semibold mb-3 flex items-center">
-                    <Mic className="w-5 h-5 mr-2" />
-                    Audio del Podcast
-                  </h3>
-                  <AudioPlayer audioUrl={generatedContent.urlpodcast} />
+          <div className="mt-6 space-y-4">
+            {generatedContent.type === 'Podcast' && generatedContent.urlpodcast ? (
+              // Renderizar solo el reproductor si el tipo es Podcast
+              <div className="bg-gray-100 p-4 rounded-md">
+                <h3 className="text-lg font-semibold mb-3 flex items-center">
+                  Escucha el Podcast
+                </h3>
+                {/* AudioPlayer Component */}
+                <AudioPlayer
+                  audioUrl={generatedContent.urlpodcast}
+                  title="Podcast de MoraBanc"
+                  description="Escucha el contenido financiero generado sobre las mejores opciones de MoraBanc."
+                  isPodcast={true}
+                />
+              </div>
+            ) : (
+              // Mostrar el contenido generado y su imagen si no es un Podcast
+              <div>
+                <h2 className="text-xl font-bold mb-2">Contenido Generado:</h2>
+                <div className="bg-gray-100 p-4 rounded-md mb-4 whitespace-pre-wrap">
+                  {generatedContent.generatedContent}
                 </div>
+                {generatedContent.image && (
+                  <img
+                    src={generatedContent.image}
+                    alt="Generated Content"
+                    className="w-full mb-4"
+                  />
+                )}
               </div>
             )}
-            {generatedContent.type !== 'Podcast' && (
-              <img
-                src={customImage ? URL.createObjectURL(customImage) : generatedContent.image}
-                alt="Generated or Uploaded Image"
-                className="w-full mb-4"
-              />
-            )}
-            <PublishForm
-              initialContent={generatedContent.generatedContent}
-              initialImage={customImage ? URL.createObjectURL(customImage) : generatedContent.image}
-              onPublish={handlePublish}
-              onImageUpload={handleImageChange}
-              onRemoveImage={handleRemoveImage}
-            />
+
+            {/* Botón para publicar el contenido generado */}
+            <div className="mt-4">
+              <button
+                onClick={handlePublish}
+                className="w-full flex justify-center items-center py-2 px-4 bg-black text-white rounded-md hover:bg-gray-800 transition-colors"
+              >
+                Publicar Contenido
+              </button>
+            </div>
           </div>
         )}
       </div>

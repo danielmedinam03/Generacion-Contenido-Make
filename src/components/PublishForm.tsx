@@ -3,8 +3,8 @@ import { Send, X } from 'lucide-react';
 
 interface PublishFormProps {
   initialContent: string;
-  initialImage: string;
-  onPublish: (content: string, image: string | File) => void;
+  initialImage: string | File | null; // Ajuste: la imagen puede ser un string, un archivo o null
+  onPublish: (content: string, image: string | File | null) => void;
   onImageUpload: (file: File) => void;
   onRemoveImage: () => void;
 }
@@ -17,7 +17,7 @@ const PublishForm: React.FC<PublishFormProps> = ({
   onRemoveImage
 }) => {
   const [content, setContent] = useState(initialContent);
-  const [image, setImage] = useState<string | File>(initialImage);
+  const [image, setImage] = useState<string | File | null>(initialImage);
 
   useEffect(() => {
     setImage(initialImage);
@@ -37,7 +37,7 @@ const PublishForm: React.FC<PublishFormProps> = ({
   };
 
   const handleRemoveImage = () => {
-    setImage(initialImage);
+    setImage(null);
     onRemoveImage();
   };
 
@@ -49,35 +49,37 @@ const PublishForm: React.FC<PublishFormProps> = ({
         className="w-full p-2 border border-gray-300 rounded-md"
         rows={6}
       />
-      <div className="flex items-center space-x-4">
-        <img
-          src={typeof image === 'string' ? image : URL.createObjectURL(image)}
-          alt="Preview"
-          className="w-24 h-24 object-cover"
-        />
-        <div>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageChange}
-            className="hidden"
-            id="image-upload"
+      {image && (
+        <div className="flex items-center space-x-4">
+          <img
+            src={typeof image === 'string' ? image : URL.createObjectURL(image)}
+            alt="Preview"
+            className="w-24 h-24 object-cover"
           />
-          <label
-            htmlFor="image-upload"
-            className="cursor-pointer bg-blue-500 text-white px-4 py-2 rounded-md"
+          <div>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="hidden"
+              id="image-upload"
+            />
+            <label
+              htmlFor="image-upload"
+              className="cursor-pointer bg-blue-500 text-white px-4 py-2 rounded-md"
+            >
+              Cambiar imagen
+            </label>
+          </div>
+          <button
+            type="button"
+            onClick={handleRemoveImage}
+            className="bg-red-500 text-white p-2 rounded-md"
           >
-            Cambiar imagen
-          </label>
+            <X size={20} />
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={handleRemoveImage}
-          className="bg-red-500 text-white p-2 rounded-md"
-        >
-          <X size={20} />
-        </button>
-      </div>
+      )}
       <button
         type="submit"
         className="w-full flex justify-center items-center py-2 px-4 bg-black text-white rounded-md"
