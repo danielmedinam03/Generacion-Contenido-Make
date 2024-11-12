@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Send, FileText, Image, Video, Mic, FileEdit, Facebook, Instagram, Twitter, Linkedin, Music } from 'lucide-react';
+
+import { Send, FileText, Image, Video, Mic, FileEdit, Facebook, Instagram, Twitter, Linkedin, Music, Plus, X } from 'lucide-react';
 import { Fragment } from 'react';
 import { Listbox, Transition } from '@headlessui/react';
 import { ChevronUpDownIcon, CheckIcon } from '@heroicons/react/20/solid';
 
 interface FormData {
-  urls: string;
+  urls: string[];
   prompt: string;
   contentType: string;
   platforms: string[];
@@ -36,77 +37,79 @@ const socialPlatforms = [
 ];
 
 const aspectRatios = [
-  { 
-    id: '1:1', 
-    label: 'Cuadrado (1:1)', 
+  {
+    id: '1:1',
+    label: 'Cuadrado (1:1)',
     dimensions: '1080x1080',
     description: 'Ideal para posts de Instagram y redes sociales'
   },
-  { 
-    id: '16:9', 
-    label: 'Panorámico (16:9)', 
+  {
+    id: '16:9',
+    label: 'Panorámico (16:9)',
     dimensions: '1920x1080',
     description: 'Estándar para videos y presentaciones HD'
   },
-  { 
-    id: '21:9', 
-    label: 'Ultra-Wide (21:9)', 
+  {
+    id: '21:9',
+    label: 'Ultra-Wide (21:9)',
     dimensions: '2560x1080',
     description: 'Formato cinematográfico y monitores ultrawide'
   },
-  { 
-    id: '3:2', 
-    label: 'Fotografía (3:2)', 
+  {
+    id: '3:2',
+    label: 'Fotografía (3:2)',
     dimensions: '1620x1080',
     description: 'Estándar fotográfico profesional'
   },
-  { 
-    id: '2:3', 
-    label: 'Retrato (2:3)', 
+  {
+    id: '2:3',
+    label: 'Retrato (2:3)',
     dimensions: '1080x1620',
     description: 'Formato vertical para fotografía'
   },
-  { 
-    id: '4:5', 
-    label: 'Instagram Vertical (4:5)', 
+  {
+    id: '4:5',
+    label: 'Instagram Vertical (4:5)',
     dimensions: '1080x1350',
     description: 'Ideal para posts verticales de Instagram'
   },
-  { 
-    id: '5:4', 
-    label: 'Clásico (5:4)', 
+  {
+    id: '5:4',
+    label: 'Clásico (5:4)',
     dimensions: '1350x1080',
     description: 'Formato tradicional de impresión'
   },
-  { 
-    id: '3:4', 
-    label: 'Vertical (3:4)', 
+  {
+    id: '3:4',
+    label: 'Vertical (3:4)',
     dimensions: '1080x1440',
     description: 'Ideal para dispositivos móviles'
   },
-  { 
-    id: '4:3', 
-    label: 'TV Clásica (4:3)', 
+  {
+    id: '4:3',
+    label: 'TV Clásica (4:3)',
     dimensions: '1440x1080',
     description: 'Formato tradicional de televisión'
   },
-  { 
-    id: '9:16', 
-    label: 'Stories/Reels (9:16)', 
+  {
+    id: '9:16',
+    label: 'Stories/Reels (9:16)',
     dimensions: '1080x1920',
     description: 'Para Stories, Reels y TikTok'
   },
-  { 
-    id: '9:21', 
-    label: 'Ultra Vertical (9:21)', 
+  {
+    id: '9:21',
+    label: 'Ultra Vertical (9:21)',
     dimensions: '1080x2520',
     description: 'Formato vertical extendido'
   }
 ];
 
 const ContentForm: React.FC<ContentFormProps> = ({ onSubmit }) => {
+  const [urlInput, setUrlInput] = useState('');
+  const [urlList, setUrlList] = useState<string[]>([]);
   const [formData, setFormData] = useState<FormData>({
-    urls: '',
+    urls: [],
     prompt: '',
     contentType: 'Post',
     platforms: [],
@@ -119,6 +122,36 @@ const ContentForm: React.FC<ContentFormProps> = ({ onSubmit }) => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleUrlInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUrlInput(e.target.value);
+  };
+
+  const addUrl = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (urlInput.trim()) {
+      try {
+        new URL(urlInput); // Validar que sea una URL válida
+        const newUrl = urlInput.trim();
+        setUrlList(prev => [...prev, newUrl]);
+        setFormData(prev => ({
+          ...prev,
+          urls: [...prev.urls, newUrl]
+        }));
+        setUrlInput('');
+      } catch {
+        alert('Por favor, ingresa una URL válida');
+      }
+    }
+  };
+
+  const removeUrl = (indexToRemove: number) => {
+    setUrlList(prev => prev.filter((_, index) => index !== indexToRemove));
+    setFormData(prev => ({
+      ...prev,
+      urls: prev.urls.filter((_, index) => index !== indexToRemove)
+    }));
   };
 
   const handleContentTypeChange = (type: string) => {
@@ -158,17 +191,41 @@ const ContentForm: React.FC<ContentFormProps> = ({ onSubmit }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <label htmlFor="urls" className="block text-sm font-medium text-gray-700 mb-1">URLs de referencia</label>
-        <input
-          type="text"
-          id="urls"
-          name="urls"
-          className="w-full p-2 border border-gray-300 rounded-md"
-          placeholder="Ingresa una o más URLs separadas por comas"
-          value={formData.urls}
-          onChange={handleInputChange}
-        />
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700">URLs de referencia</label>
+        <div className="flex gap-2">
+          <input
+            type="url"
+            value={urlInput}
+            onChange={handleUrlInputChange}
+            className="flex-1 p-2 border border-gray-300 rounded-md"
+            placeholder="https://ejemplo.com"
+          />
+          <button
+            type="button"
+            onClick={addUrl}
+            className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+        </div>
+
+        {urlList.length > 0 && (
+          <div className="mt-2 space-y-2">
+            {urlList.map((url, index) => (
+              <div key={index} className="flex items-center gap-2 bg-gray-100 p-2 rounded-md">
+                <span className="flex-1 text-sm truncate">{url}</span>
+                <button
+                  type="button"
+                  onClick={() => removeUrl(index)}
+                  className="p-1 hover:bg-gray-200 rounded-full transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div>
@@ -181,7 +238,8 @@ const ContentForm: React.FC<ContentFormProps> = ({ onSubmit }) => {
           placeholder="Ingresa tu idea de contenido o prompt aquí..."
           value={formData.prompt}
           onChange={handleInputChange}
-        ></textarea>
+          required
+        />
       </div>
 
       <div>
@@ -191,9 +249,8 @@ const ContentForm: React.FC<ContentFormProps> = ({ onSubmit }) => {
             <button
               key={name}
               type="button"
-              className={`flex flex-col items-center p-2 rounded-md ${
-                formData.contentType === name ? 'bg-black text-white' : 'bg-gray-200 text-gray-700'
-              }`}
+              className={`flex flex-col items-center p-2 rounded-md ${formData.contentType === name ? 'bg-black text-white' : 'bg-gray-200 text-gray-700'
+                }`}
               onClick={() => handleContentTypeChange(name)}
             >
               <Icon className="w-6 h-6 mb-1" />
@@ -213,9 +270,8 @@ const ContentForm: React.FC<ContentFormProps> = ({ onSubmit }) => {
                 <button
                   key={name}
                   type="button"
-                  className={`flex items-center p-2 rounded-md ${
-                    formData.platforms.includes(name) ? 'bg-black text-white' : 'bg-gray-200 text-gray-700'
-                  }`}
+                  className={`flex items-center p-2 rounded-md ${formData.platforms.includes(name) ? 'bg-black text-white' : 'bg-gray-200 text-gray-700'
+                    }`}
                   onClick={() => handlePlatformToggle(name)}
                 >
                   <Icon className="w-5 h-5 mr-1" />
@@ -225,65 +281,64 @@ const ContentForm: React.FC<ContentFormProps> = ({ onSubmit }) => {
             </div>
           </div>
           {(formData.contentType === 'Imagen' || formData.contentType === 'Post') && (
-        <div className="mb-4">
-          <Listbox value={formData.aspectRatio} onChange={handleAspectRatioChange}>
-            <div className="relative mt-1">
-              <Listbox.Label className="block text-gray-700 text-sm font-bold mb-2">
-                Formato de imagen
-              </Listbox.Label>
-              <Listbox.Button className="relative w-full cursor-pointer rounded-lg bg-white py-3 pl-4 pr-10 text-left border border-gray-300 focus:outline-none focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 focus-visible:ring-offset-2 focus-visible:ring-offset-blue-300">
-                <span className="block truncate text-sm">
-                  {aspectRatios.find(ratio => ratio.id === formData.aspectRatio)?.label}
-                </span>
-                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                  <ChevronUpDownIcon
-                    className="h-5 w-5 text-gray-400"
-                    aria-hidden="true"
-                  />
-                </span>
-              </Listbox.Button>
-              <Transition
-                as={Fragment}
-                leave="transition ease-in duration-100"
-                leaveFrom="opacity-100"
-                leaveTo="opacity-0"
-              >
-                <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                  {aspectRatios.map((ratio) => (
-                    <Listbox.Option
-                      key={ratio.id}
-                      className={({ active }) =>
-                        `relative cursor-pointer select-none py-3 pl-10 pr-4 ${
-                          active ? 'bg-blue-50 text-blue-900' : 'text-gray-900'
-                        }`
-                      }
-                      value={ratio.id}
-                    >
-                      {({ selected }) => (
-                        <>
-                          <div className="flex flex-col">
-                            <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
-                              {ratio.label}
-                            </span>
-                            <span className="block truncate text-xs text-gray-500">
-                              {ratio.dimensions} - {ratio.description}
-                            </span>
-                          </div>
-                          {selected ? (
-                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600">
-                              <CheckIcon className="h-5 w-5" aria-hidden="true" />
-                            </span>
-                          ) : null}
-                        </>
-                      )}
-                    </Listbox.Option>
-                  ))}
-                </Listbox.Options>
-              </Transition>
+            <div className="mb-4">
+              <Listbox value={formData.aspectRatio} onChange={handleAspectRatioChange}>
+                <div className="relative mt-1">
+                  <Listbox.Label className="block text-gray-700 text-sm font-bold mb-2">
+                    Formato de imagen
+                  </Listbox.Label>
+                  <Listbox.Button className="relative w-full cursor-pointer rounded-lg bg-white py-3 pl-4 pr-10 text-left border border-gray-300 focus:outline-none focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 focus-visible:ring-offset-2 focus-visible:ring-offset-blue-300">
+                    <span className="block truncate text-sm">
+                      {aspectRatios.find(ratio => ratio.id === formData.aspectRatio)?.label}
+                    </span>
+                    <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                      <ChevronUpDownIcon
+                        className="h-5 w-5 text-gray-400"
+                        aria-hidden="true"
+                      />
+                    </span>
+                  </Listbox.Button>
+                  <Transition
+                    as={Fragment}
+                    leave="transition ease-in duration-100"
+                    leaveFrom="opacity-100"
+                    leaveTo="opacity-0"
+                  >
+                    <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                      {aspectRatios.map((ratio) => (
+                        <Listbox.Option
+                          key={ratio.id}
+                          className={({ active }) =>
+                            `relative cursor-pointer select-none py-3 pl-10 pr-4 ${active ? 'bg-blue-50 text-blue-900' : 'text-gray-900'
+                            }`
+                          }
+                          value={ratio.id}
+                        >
+                          {({ selected }) => (
+                            <>
+                              <div className="flex flex-col">
+                                <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
+                                  {ratio.label}
+                                </span>
+                                <span className="block truncate text-xs text-gray-500">
+                                  {ratio.dimensions} - {ratio.description}
+                                </span>
+                              </div>
+                              {selected ? (
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600">
+                                  <CheckIcon className="h-5 w-5" aria-hidden="true" />
+                                </span>
+                              ) : null}
+                            </>
+                          )}
+                        </Listbox.Option>
+                      ))}
+                    </Listbox.Options>
+                  </Transition>
+                </div>
+              </Listbox>
             </div>
-          </Listbox>
-        </div>
-      )}
+          )}
           <div>
             <label className="block text-sm text-gray-700 mb-1">Nivel de Creatividad AI</label>
             <input
@@ -327,17 +382,13 @@ const ContentForm: React.FC<ContentFormProps> = ({ onSubmit }) => {
         />
       </div>
 
-      
-
-      <div>
-        <button
-          type="submit"
-          className="w-full flex justify-center items-center py-2 px-4 bg-black text-white rounded-md"
-        >
-          <Send className="w-5 h-5 mr-2" />
-          Generar Contenido
-        </button>
-      </div>
+      <button
+        type="submit"
+        className="w-full flex justify-center items-center py-2 px-4 bg-black text-white rounded-md"
+      >
+        <Send className="w-5 h-5 mr-2" />
+        Generar Contenido
+      </button>
     </form>
   );
 };
