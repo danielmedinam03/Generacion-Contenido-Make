@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ContentForm from './components/ContentForm';
 import LoadingSpinner from './components/LoadingSpinner';
 import AudioPlayer from './components/AudioPlayer';
 import PublishForm from './components/PublishForm'; // Añadido para manejar la publicación del contenido
+import { X, Upload, Send } from 'lucide-react';
 
 interface WebhookResponse {
   generatedContent: string;
@@ -35,6 +36,13 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [customImage, setCustomImage] = useState<File | null>(null);
+  const [editableContent, setEditableContent] = useState<string>('');
+
+  useEffect(() => {
+    if (generatedContent) {
+      setEditableContent(generatedContent.generatedContent);
+    }
+  }, [generatedContent]);
 
   const resetState = () => {
     setGeneratedContent(null);
@@ -102,22 +110,22 @@ function App() {
     try {
       let formData = new FormData();
 
-      if (!generatedContent || !generatedContent.generatedContent) {
+      if (!editableContent) {
         setError("No hay contenido generado para publicar.");
         setIsLoading(false);
         return;
       }
 
-      formData.append('contenido', generatedContent.generatedContent);
+      formData.append('contenido', editableContent);
 
       if (customImage) {
         formData.append('image', customImage, customImage.name);
       } else {
-        formData.append('url-image', generatedContent.image || '');
+        formData.append('url-image', generatedContent?.image || '');
       }
 
-      formData.append('RS', generatedContent.RSValue || '1');
-      console.log('RSValue being sent:', generatedContent.RSValue);
+      formData.append('RS', generatedContent?.RSValue || '1');
+      console.log('RSValue being sent:', generatedContent?.RSValue);
 
       const response = await fetch('https://hook.eu2.make.com/7vsk8585ljuj1wud1xpibx3g6gbshtgd', {
         method: 'POST',
@@ -150,6 +158,10 @@ function App() {
     setCustomImage(null);
   };
 
+  const handleEditableContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setEditableContent(e.target.value);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
       <div className="bg-white shadow-md rounded-lg p-6 w-full max-w-2xl">
@@ -171,12 +183,10 @@ function App() {
         {generatedContent && (
           <div className="mt-6 space-y-4">
             {generatedContent.type === 'Podcast' && generatedContent.urlpodcast ? (
-              // Renderizar solo el reproductor si el tipo es Podcast
               <div className="bg-gray-100 p-4 rounded-md">
                 <h3 className="text-lg font-semibold mb-3 flex items-center">
                   Escucha el Podcast
                 </h3>
-                {/* AudioPlayer Component */}
                 <AudioPlayer
                   audioUrl={generatedContent.urlpodcast}
                   title="Podcast de MoraBanc"
@@ -185,28 +195,69 @@ function App() {
                 />
               </div>
             ) : (
-              // Mostrar el contenido generado y su imagen si no es un Podcast
               <div>
                 <h2 className="text-xl font-bold mb-2">Contenido Generado:</h2>
                 <div className="bg-gray-100 p-4 rounded-md mb-4 whitespace-pre-wrap">
                   {generatedContent.generatedContent}
                 </div>
+                <textarea
+                  value={editableContent}
+                  onChange={handleEditableContentChange}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                  rows={6}
+                />
                 {generatedContent.image && (
-                  <img
-                    src={generatedContent.image}
-                    alt="Generated Content"
-                    className="w-full mb-4"
-                  />
-                )}
+                        <img
+                          src={customImage ? URL.createObjectURL(customImage) : generatedContent.image}
+                          alt="Generated Content"
+                          className="w-full mb-4"
+                        />
+                      )}
+                <div className="mt-4 space-y-4">
+                  {(customImage || generatedContent.image) && (
+                    <div className="flex items-center space-x-4">
+                      <img
+                        src={customImage ? URL.createObjectURL(customImage) : generatedContent.image}
+                        alt="Preview"
+                        className="w-32 h-32 object-cover rounded-md"
+                      />
+                      
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-md"
+                      >
+                        <X size={20} />
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="flex items-center space-x-4">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => e.target.files && handleImageChange(e.target.files[0])}
+                      className="hidden"
+                      id="image-upload"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById('image-upload')?.click()}
+                      className="flex items-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
+                    >
+                      <Upload size={20} />
+                      <span>Cambiar imagen</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
-
-            {/* Botón para publicar el contenido generado */}
             <div className="mt-4">
               <button
                 onClick={handlePublish}
                 className="w-full flex justify-center items-center py-2 px-4 bg-black text-white rounded-md hover:bg-gray-800 transition-colors"
               >
+                <Send className="w-5 h-5 mr-2" />
                 Publicar Contenido
               </button>
             </div>
