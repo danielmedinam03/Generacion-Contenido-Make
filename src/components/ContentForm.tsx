@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { Send, FileText, Image, Video, Mic, FileEdit, Facebook, Instagram, Twitter, Linkedin, Music, Plus, X } from 'lucide-react';
+import { Send, FileText, Image, Video, Mic, FileEdit, Facebook, Instagram, Twitter, Linkedin, Music, Plus, X, BookPlus, Download } from 'lucide-react';
 import { Fragment } from 'react';
 import { Listbox, Transition } from '@headlessui/react';
 import { ChevronUpDownIcon, CheckIcon } from '@heroicons/react/20/solid';
@@ -14,6 +14,7 @@ interface FormData {
   generateHashtags: boolean;
   referenceFile: File | null;
   aspectRatio?: string;
+  imageUrl?: string;
 }
 
 interface ContentFormProps {
@@ -26,6 +27,8 @@ const contentTypes = [
   { name: 'Video', icon: Video },
   { name: 'Podcast', icon: Mic },
   { name: 'Artículo', icon: FileEdit },
+  { name: 'Empleo', icon: BookPlus },
+  
 ];
 
 const socialPlatforms = [
@@ -104,6 +107,23 @@ const aspectRatios = [
     description: 'Formato vertical extendido'
   }
 ];
+
+const downloadImage = async (imageUrl: string, fileName: string = 'imagen-generada.jpg') => {
+  try {
+    const response = await fetch(imageUrl);
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Error al descargar la imagen:', error);
+  }
+};
 
 const ContentForm: React.FC<ContentFormProps> = ({ onSubmit }) => {
   const [urlInput, setUrlInput] = useState('');

@@ -57,7 +57,7 @@ function App() {
     console.log('Submitting data to generate content:', data);
 
     try {
-      const response = await fetchWithRetry('https://hook.eu2.make.com/blfvti9q0tzsljhnbglt1aimbaac1m8a', {
+      const response = await fetchWithRetry('https://hook.eu2.make.com/qplxx0d6ueh4ix8m5aopd41xnxwdee8o', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -131,7 +131,7 @@ function App() {
         method: 'POST',
         body: formData,
       });
-
+      console.log('Publish response:', response);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
